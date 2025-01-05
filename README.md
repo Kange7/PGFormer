@@ -19,10 +19,7 @@ conda create -n PGFormer python=3.8
 conda activate PGFormer
 ```
 
-2. Install the package using 
-```
-pip install -r requirement.txt
-```
+2. The latest codes are tested on CUDA11.8 and the corresponding PyTorch version.
 
 3. Please follow the <a href="https://github.com/HuguesTHOMAS/KPConv-PyTorch">KPConv</a> to compile the C++ extension modules in `cpp_wrappers`
 
