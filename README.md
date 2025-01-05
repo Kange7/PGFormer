@@ -9,7 +9,7 @@ As a novel point cloud semantic segmentation method for urban scenes, PGFormer i
 
 ![GRT block](https://github.com/Kange7/PGFormer/blob/main/doc/GRTblock.jpg)
 
-![Pisitional Encoding](https://github.com/Kange7/PGFormer/blob/blob/main/doc/PE.jpg)
+![Pisitional Encoding](https://github.com/Kange7/PGFormer/blob/main/doc/PE.jpg)
 
 ## Dependency
 
