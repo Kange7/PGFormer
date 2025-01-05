@@ -7,7 +7,7 @@ As a novel point cloud semantic segmentation method for urban scenes, PGFormer i
 
 ![Grouped Transformer](https://github.com/Kange7/PGFormer/blob/main/doc/GroupedTransformer.jpg)
 
-![GRT block](https://github.com/Kange7/PGFormer/blob/blob/main/doc/GRTblock.jpg)
+![GRT block](https://github.com/Kange7/PGFormer/blob/main/doc/GRTblock.jpg)
 
 ![Pisitional Encoding](https://github.com/Kange7/PGFormer/blob/blob/main/doc/PE.jpg)
 
