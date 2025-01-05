@@ -7,7 +7,7 @@ import numpy as np
 from .pointnet_util import index_points, square_distance, knn_point, farthest_point_sample
 
 
-# FPS + k-NN    仅用该模块实现降采样
+# FPS + k-NN    
 class FPS_kNN(nn.Module):
     def __init__(self, group_num, k_neighbors):
         super().__init__()
@@ -30,7 +30,7 @@ class FPS_kNN(nn.Module):
         return lc_xyz, lc_x, knn_xyz, knn_x
 
 
-# PosE for Local Geometry Extraction  用于三角函数位置编码
+# PosE for Local Geometry Extraction  
 class Pos_Enc(nn.Module):
     def __init__(self, in_dim, out_dim, alpha, beta):
         super().__init__()
@@ -231,142 +231,6 @@ def knn(x, k):
     idx = pairwise_distance.topk(k=k, dim=-1)[1]   # (batch_size, num_points, k)
     return idx
 
-def get_graph_feature(x, k=20, idx=None):   # 增加了每个点的最近邻特征 
-    batch_size = x.size(0)  # x: [b,c,n]
-    num_points = x.size(2)
-    x = x.view(batch_size, -1, num_points)
-    if idx is None:         # 创建近邻索引
-        idx = knn(x, k=k)   # (batch_size, num_points, k)
-    device = torch.device('cuda')
 
-    idx_base = torch.arange(0, batch_size, device=device).view(-1, 1, 1)*num_points  # 创建批次索引
 
-    idx = idx + idx_base   # 广播加法，将每个点的最近邻索引 idx 调整为在整个批次中正确的位置
 
-    idx = idx.view(-1)     # 展平
- 
-    _, num_dims, _ = x.size()
-
-    x = x.transpose(2, 1).contiguous()   # (batch_size, num_points, num_dims)  -> (batch_size*num_points, num_dims) #   batch_size * num_points * k + range(0, batch_size*num_points)
-    
-    feature = x.view(batch_size*num_points, -1)[idx, :]   # 索引切片
-    feature = feature.view(batch_size, num_points, k, num_dims) 
-    x = x.view(batch_size, num_points, 1, num_dims).repeat(1, 1, k, 1)
-
-    feature = torch.cat((feature-x, x), dim=3).permute(0, 3, 1, 2).contiguous()
-  
-    return feature
-
-'''
-class DGCNN(nn.Module):
-    def __init__(self, in_dims, mid_dims, out_dims, npoint, k):
-        super(DGCNN, self).__init__()
-
-        self.k = k
-        self.npoint = npoint
-        self.SE_Block = SE_Block(ch_in= out_dims)
-      
-        self.bn1 = nn.BatchNorm2d(mid_dims)
-        self.bn2 = nn.BatchNorm2d(out_dims)
-        # self.bn3 = nn.BatchNorm2d(128)
-        # self.bn4 = nn.BatchNorm2d(256)
-        self.bn3 = nn.BatchNorm1d(out_dims)
-
-        # self.bn4 = nn.BatchNorm1d((out_dims+mid_dims)*2)
-
-        self.conv1 = nn.Sequential(nn.Conv2d(in_dims*2, mid_dims, kernel_size=1, bias=False),
-                                   self.bn1,
-                                   nn.LeakyReLU(negative_slope=0.2))
-        self.conv2 = nn.Sequential(nn.Conv2d(mid_dims*2, out_dims, kernel_size=1, bias=False),
-                                   self.bn2,
-                                   nn.LeakyReLU(negative_slope=0.2))
-        self.conv3 = nn.Sequential(nn.Conv1d(out_dims+mid_dims, out_dims, kernel_size=1, bias=False),
-                                   self.bn3,
-                                   nn.LeakyReLU(negative_slope=0.2))
-        
-
-    def forward(self, x, xyz):
-        # Ensure xyz is contiguous
-        if not xyz.permute(0, 2, 1).is_contiguous():
-            xyz = xyz.permute(0, 2, 1).contiguous()
-        
-        # Perform FPS on xyz to downsample
-        fps_idx = pointnet2_utils.furthest_point_sample(xyz.permute(0, 2, 1), self.npoint).long()
-        xyz = index_points(xyz.permute(0, 2, 1), fps_idx).permute(0, 2, 1)
-        x = index_points(x.permute(0, 2, 1), fps_idx).permute(0, 2, 1)
-
-        x = get_graph_feature(x, k=self.k)
-        x = self.conv1(x)
-        x1 = x.max(dim=-1, keepdim=False)[0]  # 为了后续的特征聚合作准备
-        
-        x = get_graph_feature(x1, k=self.k)
-        x2 = self.conv2(x)
-        x2 = x.max(dim=-1, keepdim=False)[0]
-        
-
-        x = torch.cat((x1, x2), dim=1)
-
-        x = self.conv3(x)  # 将其投影到最终的嵌入维度，就这里使用1D卷积
-        x = self.SE_Block(x)
-
-        return x, xyz
-'''
-
-class DGCNN(nn.Module):  # 和Transformer模块并列，降采样模块后直接传入，最后以共享MLP结尾，具体样式以Transformer为准
-    def __init__(self, in_dims, mid_dims, out_dims,k):
-        super(DGCNN, self).__init__()
-
-        self.k = k
-        self.SE_Block = SE_Block(ch_in= out_dims)
-      
-        self.bn1 = nn.BatchNorm2d(mid_dims)
-        self.bn2 = nn.BatchNorm2d(out_dims)
-        # self.bn3 = nn.BatchNorm2d(128)
-        # self.bn4 = nn.BatchNorm2d(256)
-        self.bn3 = nn.BatchNorm1d(out_dims)
-
-        # self.bn4 = nn.BatchNorm1d((out_dims+mid_dims)*2)
-
-        self.conv1 = nn.Sequential(nn.Conv2d(in_dims*2, mid_dims, kernel_size=1, bias=False),
-                                   self.bn1,
-                                   nn.LeakyReLU(negative_slope=0.2))
-        self.conv2 = nn.Sequential(nn.Conv2d(mid_dims*2, out_dims, kernel_size=1, bias=False),
-                                   self.bn2,
-                                   nn.LeakyReLU(negative_slope=0.2))
-        self.conv3 = nn.Conv1d(out_dims + mid_dims, out_dims, kernel_size=1, bias=False)
-                                   
-        #self.conv4 = nn.Conv1d(out_dims + mid_dims, out_dims, kernel_size=3, padding=1, bias=False)
-
-        self.conv5 = nn.Conv1d(out_dims + mid_dims, out_dims, kernel_size=3, padding=1, dilation=1,  bias=False)
-
-        self.act = nn.LeakyReLU(negative_slope=0.2)
- 
-    def forward(self, x, xyz):
-    
-        xyz = xyz
-        x = get_graph_feature(x, k=self.k)
-        x = self.conv1(x)
-        x1 = x.max(dim=-1, keepdim=False)[0]  # 为了后续的特征聚合作准备
-        
-        x = get_graph_feature(x1, k=self.k)
-        x = self.conv2(x)
-        x2 = x.max(dim=-1, keepdim=False)[0]
-
-        x = torch.cat((x1, x2), dim=1)
-
-        x1 = self.conv3(x)  # 将其投影到最终的嵌入维度，就这里使用1D卷积
-        x1 = self.SE_Block(x1)
-
-        # x2 = self.conv4(x)  
-        # x2 = self.SE_Block(x2)
-
-        x3 = self.conv5(x)  
-        x3 = self.SE_Block(x3)
-
-        # print(x1.size())
-        # print(x2.size())
-        # print(x3.size())
-
-        x = self.act(self.bn3(x1+x3))
-
-        return x, xyz
