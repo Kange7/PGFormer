@@ -1,4 +1,4 @@
-# PGFormer: A novel Point Cloud Urban Scenes Semantic Segmentation Network Combining Grouped Transformer and KPConv
+# PGFormer: A Point Cloud Segmentation Network for Urban Scenes Combining Grouped Transformer and KPConv
 ## Introduction
 Official code for the paper PGFormer: A novel Point Cloud Urban Scenes Semantic Segmentation Network Combining Grouped Transformer and KPConv.
 As a novel point cloud semantic segmentation method for urban scenes, PGFormer is capable of enhancing local key information without losing global context. 
